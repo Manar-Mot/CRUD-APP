@@ -1,17 +1,68 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React, { Suspense } from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import RootLayout from "./pages/RootLayout";
+import Index from "./pages";
+import { Provider } from "react-redux";
+import store from "./store/store";
+import ErrorPage from "./pages/ErrorPage";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const AddPost = React.lazy(() => import("./pages/Add"));
+const EditPost = React.lazy(() => import("./pages/Edit"));
+const Details = React.lazy(() => import("./pages/details"));
+
+const postParamHandler = ({ params }) => {
+  if (isNaN(params.id)) {
+    throw new Response("Bad Request", {
+      statusText: "please make sure to insert correct post ID",
+      status: 400,
+    });
+  }
+};
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <ErrorPage />,
+    children: [
+      { index: true, element: <Index /> },
+      { path: "post", element: <Index /> },
+      {
+        path: "post/add",
+        element: (
+          <Suspense fallback="loading please wait...">
+            <AddPost />
+          </Suspense>
+        ),
+      },
+      {
+        path: "post/:id",
+        element: (
+          <Suspense fallback="loading please wait...">
+            <Details />
+          </Suspense>
+        ),
+        loader: postParamHandler,
+      },
+      {
+        path: "post/:id/edit",
+        element: (
+          <Suspense fallback="loading please wait...">
+            <EditPost />
+          </Suspense>
+        ),
+        loader: postParamHandler,
+      },
+    ],
+  },
+]);
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <Provider store={store}>
+    <RouterProvider router={router} />
+  </Provider>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
